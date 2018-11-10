@@ -28,14 +28,11 @@ void setSteperHighSpeed()
     stepper.setAccelerationInMillimetersPerSecondPerSecond(HIGH_ACCELERATION);
 }
 
-
 void setup()
 {
     stepper.connectToPins(STEP_PIN, DIR_PIN);
-
     stepper.setStepsPerMillimeter(STEPS_PER_MM);
-    stepper.setSpeedInMillimetersPerSecond(HIGH_SPEED);
-    stepper.setAccelerationInMillimetersPerSecondPerSecond(HIGH_ACCELERATION);
+    setSteperHighSpeed();
 
     pinMode(UP_BTN_PIN, INPUT_PULLUP);
     pinMode(DOWN_BTN_PIN, INPUT_PULLUP);
