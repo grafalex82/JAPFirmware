@@ -53,6 +53,11 @@ void setup()
     Serial.begin(DEFAULT_BAUDRATE);
 }
 
+bool isButtonPressed(int btnPin)
+{
+    return digitalRead(btnPin) == LOW;
+}
+
 void processBtnMovement(int btnPin, int direction = 1)
 {
     // Try small movements first
@@ -61,7 +66,7 @@ void processBtnMovement(int btnPin, int direction = 1)
     {
         stepper.moveRelativeInMillimeters(MANUAL_MOVEMENT_MM * direction);
         delay(300);
-        if(digitalRead(btnPin) != LOW)
+        if(!isButtonPressed(btnPin))
             return;
     }
 
@@ -76,7 +81,7 @@ void processBtnMovement(int btnPin, int direction = 1)
             stepper.processMovement();
 
         // Check if button released
-        if(digitalRead(btnPin) != LOW)
+        if(!isButtonPressed(btnPin))
         {
             stepper.setupStop();
             while(!stepper.processMovement())
@@ -88,7 +93,7 @@ void processBtnMovement(int btnPin, int direction = 1)
     // Then move at high speed
     setSteperHighSpeed();
     stepper.setupRelativeMoveInMillimeters(1000 * direction);
-    while(digitalRead(btnPin) == LOW)
+    while(isButtonPressed(btnPin))
     {
         if(stepper.motionComplete())
             stepper.setupRelativeMoveInMillimeters(1000 * direction);
@@ -149,9 +154,9 @@ void loop()
 {
     checkAlive();
 
-    if(digitalRead(UP_BTN_PIN) == LOW)
+    if(isButtonPressed(UP_BTN_PIN))
         processBtnMovement(UP_BTN_PIN, 1);
-    if(digitalRead(DOWN_BTN_PIN) == LOW)
+    if(isButtonPressed(DOWN_BTN_PIN))
         processBtnMovement(DOWN_BTN_PIN, -1);
 
     processSerialInput();
