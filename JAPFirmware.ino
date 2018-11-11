@@ -22,10 +22,14 @@ char cmdBuf[BUF_LEN];
 SpeedyStepper stepper;
 
 template<typename T>
-void debugPrint(T value)
+void debugPrint(T value, bool addNewLine = true)
 {
     bool DEBUG_ENABLED = true;
-    Serial.println(value);
+    if(DEBUG_ENABLED)
+        if(addNewLine)
+            Serial.println(value);
+        else
+            Serial.print(value);
 }
 
 
@@ -128,15 +132,25 @@ void processSerialInput()
         if(Serial.available())
         {
             char ch = Serial.read();
-            cmdBuf[idx++] = ch;
+            cmdBuf[idx] = ch;
 
+            // Ignore \r's
+            if(ch == '\r')
+                continue;
+
+            // Stop receiving more symbols on \n
             if(ch == '\n')
+            {
+                cmdBuf[idx] = 0;
                 break;
+            }
+
+            idx++;
         }
     }
 
     // Process the received command
-    debugPrint("Received command: ");
+    debugPrint("Received command: ", false);
     debugPrint(cmdBuf);
 }
 
@@ -152,7 +166,7 @@ void checkAlive()
 
 void loop()
 {
-    checkAlive();
+//    checkAlive();
 
     if(isButtonPressed(UP_BTN_PIN))
         processBtnMovement(UP_BTN_PIN, 1);
