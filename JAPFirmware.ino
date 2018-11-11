@@ -1,5 +1,6 @@
 #include <SpeedyStepper.h>
 
+const int DEFAULT_BAUDRATE = 115200;
 
 const int DIR_PIN = 4;
 const int STEP_PIN = 7;
@@ -36,6 +37,8 @@ void setup()
 
     pinMode(UP_BTN_PIN, INPUT_PULLUP);
     pinMode(DOWN_BTN_PIN, INPUT_PULLUP);
+
+    Serial.begin(DEFAULT_BAUDRATE);
 }
 
 void processBtnMovement(int btnPin, int direction = 1)
@@ -87,16 +90,18 @@ void processBtnMovement(int btnPin, int direction = 1)
         ;
 }
 
+unsigned long lastMS = 0;
 void loop()
 {
-//    stepper.moveRelativeInSteps(50000);
-//    delay(1000);
-//    stepper.moveRelativeInSteps(-50000);
-//    delay(1000);
-
     if(digitalRead(UP_BTN_PIN) == LOW)
         processBtnMovement(UP_BTN_PIN, 1);
     if(digitalRead(DOWN_BTN_PIN) == LOW)
         processBtnMovement(DOWN_BTN_PIN, -1);
+
+    if(millis() - lastMS > 1000)
+    {
+        lastMS = millis();
+        Serial.println("Alive");
+    }
 }
 
