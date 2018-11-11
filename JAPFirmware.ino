@@ -1,6 +1,6 @@
 #include <SpeedyStepper.h>
 
-const int DEFAULT_BAUDRATE = 115200;
+const unsigned long DEFAULT_BAUDRATE = 115200;
 
 const int DIR_PIN = 4;
 const int STEP_PIN = 7;
@@ -15,7 +15,19 @@ const float HIGH_SPEED = 8;
 const float LOW_ACCELERATION = 5;
 const float HIGH_ACCELERATION = 20;
 
+const int CMD_TIMEOUT = 5000;
+const int BUF_LEN = 100;
+char cmdBuf[BUF_LEN];
+
 SpeedyStepper stepper;
+
+template<typename T>
+void debugPrint(T value)
+{
+    bool DEBUG_ENABLED = true;
+    Serial.println(value);
+}
+
 
 void setSteperLowSpeed()
 {
@@ -90,18 +102,58 @@ void processBtnMovement(int btnPin, int direction = 1)
         ;
 }
 
-unsigned long lastMS = 0;
+void processSerialInput()
+{
+    // If nothing arrived - get out of here to process buttons
+    if(!Serial.available())
+        return;
+
+    int idx = 0;
+    unsigned long startMS = millis();
+    while(true)
+    {
+        // Check timeout
+        if(millis() - startMS > CMD_TIMEOUT)
+        {
+            debugPrint("Receive command timeout exceeded");
+            return;
+        }
+
+        // Store chars to the buffer until \n is received
+        if(Serial.available())
+        {
+            char ch = Serial.read();
+            cmdBuf[idx++] = ch;
+
+            if(ch == '\n')
+                break;
+        }
+    }
+
+    // Process the received command
+    debugPrint("Received command: ");
+    debugPrint(cmdBuf);
+}
+
+void checkAlive()
+{
+    static unsigned long lastMS = 0;
+    if(millis() - lastMS > 1000)
+    {
+        lastMS = millis();
+        debugPrint("Alive");
+    }
+}
+
 void loop()
 {
+    checkAlive();
+
     if(digitalRead(UP_BTN_PIN) == LOW)
         processBtnMovement(UP_BTN_PIN, 1);
     if(digitalRead(DOWN_BTN_PIN) == LOW)
         processBtnMovement(DOWN_BTN_PIN, -1);
 
-    if(millis() - lastMS > 1000)
-    {
-        lastMS = millis();
-        Serial.println("Alive");
-    }
+    processSerialInput();
 }
 
