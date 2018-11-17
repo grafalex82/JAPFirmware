@@ -4,11 +4,12 @@ const unsigned long DEFAULT_BAUDRATE = 115200;
 
 const int DIR_PIN = 4;
 const int STEP_PIN = 7;
+const int ENABLE_PIN = 8;
 
 const int UP_BTN_PIN = A0;
 const int DOWN_BTN_PIN = A1;
 
-const float STEPS_PER_MM = 400*16/4; //steps per revolution * microstepping / mm per revolution
+const float STEPS_PER_MM = 400*16/8; //steps per revolution * microstepping / mm per revolution
 const float MANUAL_MOVEMENT_MM = 0.1;
 const float LOW_SPEED = 2;
 const float HIGH_SPEED = 8;
@@ -17,9 +18,10 @@ const float HIGH_ACCELERATION = 20;
 
 const int CMD_TIMEOUT = 5000;
 const int BUF_LEN = 100;
-char cmdBuf[BUF_LEN];
 
 SpeedyStepper stepper;
+
+bool relativePositioning = true;
 
 template<typename T>
 void debugPrint(T value, bool addNewLine = true)
@@ -47,6 +49,8 @@ void setSteperHighSpeed()
 
 void setup()
 {
+    pinMode(ENABLE_PIN, OUTPUT);
+
     stepper.connectToPins(STEP_PIN, DIR_PIN);
     stepper.setStepsPerMillimeter(STEPS_PER_MM);
     setSteperHighSpeed();
@@ -111,6 +115,151 @@ void processBtnMovement(int btnPin, int direction = 1)
         ;
 }
 
+int parseInt(const char * buf, char prefix, int value)
+{
+    const char * ptr = buf;
+
+    while(ptr && *ptr)
+    {
+        if(*ptr == prefix)
+            return atoi(ptr + 1);
+
+        ptr = strchr(ptr,' ') + 1;
+    }
+    return value;
+}
+
+float parseFloat(const char * buf, char prefix, float value)
+{
+    const char * ptr = buf;
+
+    while(ptr && *ptr)
+    {
+        if(*ptr == prefix)
+            return atof(ptr + 1);
+
+        ptr = strchr(ptr,' ') + 1;
+    }
+    return value;
+}
+
+
+// TODO: These commands were supported by original JAP firmware
+// M3 - Servo position (not going to be used)
+// M7/M9 - Coolant On/off ???
+// M106/M107 - Cooler On/Off  (LED????)
+// M245/M246 - Cooler On/Off ???
+
+// These can be also sent by nanodlp
+// M84
+// M650 T20
+// M653
+// M654
+
+
+void processMotorOnCmd() //M17
+{
+    digitalWrite(ENABLE_PIN, LOW);
+}
+
+void processMotorOffCmd() //M18
+{
+    digitalWrite(ENABLE_PIN, HIGH);
+}
+
+void processMoveCmd(float position, float speed)
+{
+    if(speed != 0)
+        stepper.setSpeedInMillimetersPerSecond(speed / 60);
+
+    if(relativePositioning)
+        stepper.moveRelativeInMillimeters(position);
+    else
+        stepper.moveToPositionInMillimeters(position);
+}
+
+void processPauseCmd(int duration)
+{
+    delay(duration);
+}
+
+bool parseGCommand(const char * cmd)
+{
+    int cmdID = parseInt(cmd, 'G', 0);
+    switch(cmdID)
+    {
+        case 1: // G1 Move
+        {
+            float len = parseFloat(cmd, 'Z', 0);
+            float speed = parseFloat(cmd, 'F', 0);
+            processMotorOnCmd();
+            processMoveCmd(len, speed);
+
+            // NanoDLP waits for a confirmation that movement was completed
+            Serial.write("Z_move_comp\n");
+            return true;
+        }
+        case 4: // G4 Pause
+        {
+            int duration = parseInt(cmd, 'P', 0);
+            processPauseCmd(duration);
+            return true;
+        }
+
+        case 90: // G90 - Set Absolute Positioning
+            relativePositioning = false;
+            return true;
+
+        case 91: // G91 - Set Relative Positioning
+            relativePositioning = true;
+            return true;
+
+    }
+
+    return false;
+}
+
+bool parseMCommand(const char * cmd)
+{
+    int cmdID = parseInt(cmd, 'M', 0);
+    switch(cmdID)
+    {
+    case 17: // M17 - Motor on
+        processMotorOnCmd();
+        return true;
+
+    case 18: // M18 - Motor off
+        processMotorOffCmd();
+        return true;
+
+    case 114: // M114 - Get current position
+        float pos = stepper.getCurrentPositionInMillimeters();
+        Serial.print("Z:");
+        Serial.print(pos, 2);
+        Serial.write('\n');
+        return true;
+    }
+
+    return false;
+}
+
+bool parseCommand(const char * cmd)
+{
+    switch(*cmd)
+    {
+    case 'G':
+        return parseGCommand(cmd);
+
+    case 'M':
+        return parseMCommand(cmd);
+
+    default:
+        break;
+    }
+
+    return false;
+}
+
 void processSerialInput()
 {
     // If nothing arrived - get out of here to process buttons
@@ -119,6 +268,8 @@ void processSerialInput()
 
     int idx = 0;
     unsigned long startMS = millis();
+    char cmdBuf[BUF_LEN];
+
     while(true)
     {
         // Check timeout
@@ -150,8 +301,16 @@ void processSerialInput()
     }
 
     // Process the received command
-    debugPrint("Received command: ", false);
-    debugPrint(cmdBuf);
+    if(parseCommand(cmdBuf))
+    {
+        Serial.write("ok\n");
+    }
+    else
+    {
+        Serial.print("Invalid or unsupported command: ");
+        Serial.print(cmdBuf);
+        Serial.write('\n');
+    }
 }
 
 void checkAlive()
