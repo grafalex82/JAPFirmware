@@ -9,6 +9,8 @@ const int ENABLE_PIN = 8;
 const int UP_BTN_PIN = A0;
 const int DOWN_BTN_PIN = A1;
 
+const int UV_LED_PIN = A6;
+
 const float STEPS_PER_MM = 400*16/8; //steps per revolution * microstepping / mm per revolution
 const float MANUAL_MOVEMENT_MM = 0.1;
 const float LOW_SPEED = 2;
@@ -57,6 +59,9 @@ void setup()
 
     pinMode(UP_BTN_PIN, INPUT_PULLUP);
     pinMode(DOWN_BTN_PIN, INPUT_PULLUP);
+
+    pinMode(UV_LED_PIN, OUTPUT);
+    digitalWrite(UV_LED_PIN, LOW);
 
     Serial.begin(DEFAULT_BAUDRATE);
 }
@@ -167,6 +172,17 @@ void processMotorOffCmd() //M18
     digitalWrite(ENABLE_PIN, HIGH);
 }
 
+void processLEDOnCmd() // M3
+{
+    digitalWrite(UV_LED_PIN, HIGH);
+}
+
+void processLEDOffCmd() // M5
+{
+    digitalWrite(UV_LED_PIN, LOW);
+}
+
+
 void processMoveCmd(float position, float speed)
 {
     if(speed != 0)
@@ -224,6 +240,14 @@ bool parseMCommand(const char * cmd)
     int cmdID = parseInt(cmd, 'M', 0);
     switch(cmdID)
     {
+    case 3: // M3 - UV LED On
+        processLEDOnCmd();
+        return true;
+
+    case 5: // M5 - UV LED Off
+        processLEDOffCmd();
+        return true;
+
     case 17: // M17 - Motor on
         processMotorOnCmd();
         return true;
@@ -299,6 +323,10 @@ void processSerialInput()
             idx++;
         }
     }
+
+    // Swallow empty lines
+    if(cmdBuf[0] == '\0')
+        return;
 
     // Process the received command
     if(parseCommand(cmdBuf))
