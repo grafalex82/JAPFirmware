@@ -51,6 +51,8 @@ void setSteperHighSpeed()
 
 void setup()
 {
+    pinMode(LED_BUILTIN, OUTPUT);
+
     pinMode(ENABLE_PIN, OUTPUT);
 
     stepper.connectToPins(STEP_PIN, DIR_PIN);
@@ -347,13 +349,14 @@ void checkAlive()
     if(millis() - lastMS > 1000)
     {
         lastMS = millis();
-        debugPrint("Alive");
+        //debugPrint("Alive");
+        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     }
 }
 
 void loop()
 {
-//    checkAlive();
+    checkAlive();
 
     if(isButtonPressed(UP_BTN_PIN))
         processBtnMovement(UP_BTN_PIN, 1);
