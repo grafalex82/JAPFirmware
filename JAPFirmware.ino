@@ -9,6 +9,8 @@ const int ENABLE_PIN = 8;
 const int UP_BTN_PIN = A0;
 const int DOWN_BTN_PIN = A1;
 
+const int LED_ON_BTN_PIN = A2;
+
 const int UV_LED_PIN = A6;
 
 const float STEPS_PER_MM = 400*16/8; //steps per revolution * microstepping / mm per revolution
@@ -61,6 +63,7 @@ void setup()
 
     pinMode(UP_BTN_PIN, INPUT_PULLUP);
     pinMode(DOWN_BTN_PIN, INPUT_PULLUP);
+    pinMode(LED_ON_BTN_PIN, INPUT_PULLUP);
 
     pinMode(UV_LED_PIN, OUTPUT);
     digitalWrite(UV_LED_PIN, LOW);
@@ -71,6 +74,14 @@ void setup()
 bool isButtonPressed(int btnPin)
 {
     return digitalRead(btnPin) == LOW;
+}
+
+void processLEDButon()
+{
+    digitalWrite(UV_LED_PIN, !digitalRead(UV_LED_PIN));
+    delay(50);
+    while(isButtonPressed(LED_ON_BTN_PIN))
+        ;
 }
 
 void processBtnMovement(int btnPin, int direction = 1)
@@ -149,19 +160,6 @@ float parseFloat(const char * buf, char prefix, float value)
     }
     return value;
 }
-
-
-// TODO: These commands were supported by original JAP firmware
-// M3 - Servo position (not going to be used)
-// M7/M9 - Coolant On/off ???
-// M106/M107 - Cooler On/Off  (LED????)
-// M245/M246 - Cooler On/Off ???
-
-// These can be also sent by nanodlp
-// M84
-// M650 T20
-// M653
-// M654
 
 
 void processMotorOnCmd() //M17
@@ -362,6 +360,9 @@ void loop()
         processBtnMovement(UP_BTN_PIN, 1);
     if(isButtonPressed(DOWN_BTN_PIN))
         processBtnMovement(DOWN_BTN_PIN, -1);
+
+    if(isButtonPressed(LED_ON_BTN_PIN))
+        processLEDButon();
 
     processSerialInput();
 }
