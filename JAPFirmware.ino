@@ -2,6 +2,9 @@
 
 const unsigned long DEFAULT_BAUDRATE = 115200;
 
+#define JAP_PRINTER
+
+#ifdef JAP_PRINTER
 const int DIR_PIN = 4;
 const int STEP_PIN = 7;
 const int ENABLE_PIN = 8;
@@ -12,6 +15,20 @@ const int DOWN_BTN_PIN = A1;
 const int LED_ON_BTN_PIN = A2;
 
 const int UV_LED_PIN = A6;
+
+#else // Wanhao D7
+
+const int DIR_PIN = 48;
+const int STEP_PIN = 76;
+const int ENABLE_PIN = A8;
+
+const int UP_BTN_PIN = A0; //?????
+const int DOWN_BTN_PIN = A1; //?????
+
+const int LED_ON_BTN_PIN = 18;
+
+const int UV_LED_PIN = 9;
+#endif//
 
 const float STEPS_PER_MM = 400*16/8; //steps per revolution * microstepping / mm per revolution
 const float MANUAL_MOVEMENT_MM = 0.1;
