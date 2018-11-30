@@ -44,15 +44,16 @@ SpeedyStepper stepper;
 
 bool relativePositioning = true;
 
-template<typename T>
-void debugPrint(T value, bool addNewLine = true)
+void debugPrint(const char * str, bool addNewLine = true)
 {
-    bool DEBUG_ENABLED = true;
+    const bool DEBUG_ENABLED = true;
     if(DEBUG_ENABLED)
+    {
         if(addNewLine)
-            Serial.println(value);
+            Serial.println(str);
         else
-            Serial.print(value);
+            Serial.print(str);
+    }
 }
 
 
