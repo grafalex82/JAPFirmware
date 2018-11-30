@@ -190,12 +190,12 @@ void processMotorOffCmd() //M18
     digitalWrite(ENABLE_PIN, HIGH);
 }
 
-void processLEDOnCmd() // M3
+void processLEDOnCmd() // M3 or M106
 {
     digitalWrite(UV_LED_PIN, HIGH);
 }
 
-void processLEDOffCmd() // M5
+void processLEDOffCmd() // M5 or M107
 {
     digitalWrite(UV_LED_PIN, LOW);
 }
@@ -258,11 +258,13 @@ bool parseMCommand(const char * cmd)
     int cmdID = parseInt(cmd, 'M', 0);
     switch(cmdID)
     {
-    case 3: // M3 - UV LED On
+    case 3: // M3/M106 - UV LED On
+    case 106: 
         processLEDOnCmd();
         return true;
 
-    case 5: // M5 - UV LED Off
+    case 5: // M5/M107 - UV LED Off
+    case 107:
         processLEDOffCmd();
         return true;
 
